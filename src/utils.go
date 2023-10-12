@@ -1,4 +1,4 @@
-package main
+package ProjetHangman
 
 import (
 	"fmt"
@@ -9,16 +9,25 @@ import (
 	"os/exec"
 	"runtime"
 	"strings"
-	"time"
 )
 
 var words []string
 var word, runesPlayed []rune
 
+var (
+	colorTitle      Color = Lavender
+	colorOptions    Color = Forestgreen
+	colorPointingAt Color = Aquamarine
+)
+
 const (
 	ALREADYPLAYED = 0
 	CORRECTRUNE   = 1
 	INCORRECTRUNE = 2
+
+	CHANGECOLORTITLE            = 3
+	CHANGECOLOROPTIONS          = 4
+	CHANGECOLOROPTIONPOINTINGAT = 5
 )
 
 func runCmd(name string, arg ...string) {
@@ -95,12 +104,12 @@ func inputMenu() (x, y int, enter bool) {
 func createVerticalMenu(cursorAt int, cursor, title string, options ...string) string {
 	for {
 		clearTerminal()
-		fmt.Println("\033[38;2;30;144;255m", title, "\033[0m")
+		printColor(colorTitle, title)
 		for i, option := range options {
 			if cursorAt == i {
-				fmt.Println("\033[38;2;0;128;128m", cursor, "\t", option, "\033[0m")
+				printColor(colorPointingAt, cursor, "\t", option)
 			} else {
-				fmt.Println("\033[38;2;30;144;255m", "\t", option, "\033[0m")
+				printColor(colorOptions, "\t", option)
 			}
 		}
 		_, y, enter := inputMenu()
@@ -123,24 +132,106 @@ func createVerticalMenu(cursorAt int, cursor, title string, options ...string) s
 	}
 }
 
-func principalMenu() {
+func PrincipalMenu() {
+	clearTerminal()
 	for {
 		switch createVerticalMenu(0, "-->", "------- MENU PRINCIPAL -------", "Nouvelle partie", "Paramètres", "Quitter") {
 		case "Nouvelle partie":
 			play()
 		case "Paramètres":
 			clearTerminal()
-			fmt.Println("Paramètres...")
-			time.Sleep(time.Second * 2)
+			parameters()
 		case "Quitter":
 			clearTerminal()
-			os.Exit(1)
+			os.Exit(0)
 		}
 	}
 }
 
+func parameters() {
+	clearTerminal()
+	for {
+		switch createVerticalMenu(0, "-->", "------- PARAMETRES -------", "Changer la couleur des titres", "Changer la couleur des options", "Changer la couleur de l'option sélectionnée", "Retour") {
+		case "Changer la couleur des titres":
+			selectColorFamily(CHANGECOLORTITLE)
+		case "Changer la couleur des options":
+			selectColorFamily(CHANGECOLOROPTIONS)
+		case "Changer la couleur de l'option sélectionnée":
+			selectColorFamily(CHANGECOLOROPTIONPOINTINGAT)
+		case "Retour":
+			return
+		}
+	}
+}
+
+func selectColorFamily(option int) {
+	clearTerminal()
+	var title string
+	switch option {
+	case CHANGECOLORTITLE:
+		title = "------- Couleur des titres -------"
+	case CHANGECOLOROPTIONS:
+		title = "------ Couleur des options ------"
+	case CHANGECOLOROPTIONPOINTINGAT:
+		title = "--- Couleur de l'option sélectionnée ---"
+	}
+	switch createVerticalMenu(0, "-->", title, "Rouge", "Orange", "Jaune", "Vert", "Cyan", "Bleu", "Violet", "Rose", "Blanc", "Gris", "Marron", "Retour") {
+	case "Rouge":
+		selectColor(Reds, option)
+	case "Orange":
+		selectColor(Oranges, option)
+	case "Jaune":
+		selectColor(Yellows, option)
+	case "Vert":
+		selectColor(Greens, option)
+	case "Cyan":
+		selectColor(Cyans, option)
+	case "Bleu":
+		selectColor(Blues, option)
+	case "Violet":
+		selectColor(Purples, option)
+	case "Rose":
+		selectColor(Pinks, option)
+	case "Blanc":
+		selectColor(Whites, option)
+	case "Gris":
+		selectColor(Grays, option)
+	case "Marron":
+		selectColor(Browns, option)
+	case "Retour":
+		break
+	}
+}
+
+func selectColor(color []Color, option int) {
+	clearTerminal()
+	var options []string
+	var newColor Color
+	for _, c := range color {
+		options = append(options, colorCode(c)+c.Name)
+	}
+	options = append(options, "Retour")
+	colorName := createVerticalMenu(0, "-->", "------- Choisissez une couleur -------", options...)
+	if colorName == "Retour" {
+		return
+	}
+	for _, c := range color {
+		if colorCode(c)+c.Name == colorName {
+			newColor = c
+		}
+	}
+	switch option {
+	case CHANGECOLORTITLE:
+		colorTitle = newColor
+	case CHANGECOLOROPTIONS:
+		colorOptions = newColor
+	case CHANGECOLOROPTIONPOINTINGAT:
+		colorPointingAt = newColor
+	}
+}
+
 func retreiveWords() {
-	content, err := os.ReadFile("Files/Dictionaries/ods5.txt")
+	content, err := os.ReadFile("../Files/Dictionaries/ods5.txt")
 	if err != nil {
 		log.Fatal(err)
 	}
