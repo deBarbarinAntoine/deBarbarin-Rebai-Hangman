@@ -31,14 +31,13 @@ var (
 	Oranges = []Color{Coral, Tomato, Orangered, Orange, Darkorange}
 
 	//Yellow colors
-	Lemonchiffon = Color{"Lemonchiffon", 255, 250, 205}
-	Moccasin     = Color{"Moccasin", 255, 228, 181}
-	Khaki        = Color{"Khaki", 240, 230, 140}
-	Darkkhaki    = Color{"Darkkhaki", 189, 183, 107}
-	Gold         = Color{"Gold", 255, 215, 0}
-	Yellow       = Color{"Yellow", 255, 255, 0}
+	Palegoldenrod = Color{"Palegoldenrod", 238, 232, 170}
+	Moccasin      = Color{"Moccasin", 255, 228, 181}
+	Darkkhaki     = Color{"Darkkhaki", 189, 183, 107}
+	Gold          = Color{"Gold", 255, 215, 0}
+	Yellow        = Color{"Yellow", 255, 255, 0}
 	//All Yellows
-	Yellows = []Color{Lemonchiffon, Moccasin, Khaki, Darkkhaki, Gold, Yellow}
+	Yellows = []Color{Palegoldenrod, Moccasin, Darkkhaki, Gold, Yellow}
 
 	//Green colors
 	Lawngreen      = Color{"Lawngreen", 124, 252, 0}
@@ -63,22 +62,22 @@ var (
 	Cyans = []Color{Cyan, Aquamarine, Turquoise, Teal}
 
 	//Blue colors
+	Deepskyblue    = Color{"Deepskyblue", 0, 191, 255}
 	Cornflowerblue = Color{"Cornflowerblue", 100, 149, 237}
 	Royalblue      = Color{"Royalblue", 65, 105, 225}
 	Blue           = Color{"Blue", 0, 0, 255}
-	Navy           = Color{"Navy", 0, 0, 128}
 	//All Blues
-	Blues = []Color{Cornflowerblue, Royalblue, Blue, Navy}
+	Blues = []Color{Deepskyblue, Cornflowerblue, Royalblue, Blue}
 
 	//Purple colors
-	Lavender     = Color{"Lavender", 230, 230, 250}
+	Plum         = Color{"Plum", 221, 160, 221}
 	Magenta      = Color{"Magenta", 255, 0, 255}
 	Mediumpurple = Color{"Mediumpurple", 147, 112, 219}
 	Darkorchid   = Color{"Darkorchid", 153, 50, 204}
 	Darkmagenta  = Color{"Darkmagenta", 139, 0, 139}
 	Purple       = Color{"Purple", 128, 0, 128}
 	//All Purples
-	Purples = []Color{Lavender, Magenta, Mediumpurple, Darkorchid, Darkmagenta, Purple}
+	Purples = []Color{Plum, Magenta, Mediumpurple, Darkorchid, Darkmagenta, Purple}
 
 	//Pink colors
 	Pink     = Color{"Pink", 255, 192, 203}
@@ -101,69 +100,14 @@ var (
 	Grays = []Color{Darkgray, Slategray}
 
 	//Brown colors
-	Cornsilk  = Color{"Cornsilk", 255, 248, 220}
-	Wheat     = Color{"Wheat", 245, 222, 179}
-	Chocolate = Color{"Chocolate", 210, 105, 30}
-	Sienna    = Color{"Sienna", 160, 82, 45}
-	Brown     = Color{"Brown", 165, 42, 42}
+	Tan         = Color{"Tan", 210, 180, 140}
+	Peru        = Color{"Peru", 205, 133, 63}
+	Chocolate   = Color{"Chocolate", 210, 105, 30}
+	Sienna      = Color{"Sienna", 160, 82, 45}
+	Brown       = Color{"Brown", 165, 42, 42}
+	Saddlebrown = Color{"Saddlebrown", 139, 69, 19}
 	//All Browns
-	Browns = []Color{Cornsilk, Wheat, Chocolate, Sienna, Brown}
-
-	//List of all colors
-	AllColors = []Color{
-		Lightsalmon,
-		Salmon,
-		Crimson,
-		Red,
-		Coral,
-		Tomato,
-		Orangered,
-		Gold,
-		Orange,
-		Darkorange,
-		Lemonchiffon,
-		Moccasin,
-		Khaki,
-		Darkkhaki,
-		Yellow,
-		Lawngreen,
-		Limegreen,
-		Forestgreen,
-		Darkgreen,
-		Springgreen,
-		Lightgreen,
-		Mediumseagreen,
-		Olive,
-		Darkolivegreen,
-		Olivedrab,
-		Cyan,
-		Aquamarine,
-		Turquoise,
-		Teal,
-		Cornflowerblue,
-		Royalblue,
-		Blue,
-		Navy,
-		Lavender,
-		Magenta,
-		Mediumpurple,
-		Darkorchid,
-		Darkmagenta,
-		Purple,
-		Pink,
-		Hotpink,
-		Deeppink,
-		White,
-		Beige,
-		Mistyrose,
-		Darkgray,
-		Slategray,
-		Cornsilk,
-		Wheat,
-		Chocolate,
-		Sienna,
-		Brown,
-	}
+	Browns = []Color{Tan, Peru, Chocolate, Sienna, Brown, Saddlebrown}
 )
 
 const CLEARCOLOR = "\033[0m"

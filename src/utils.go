@@ -15,7 +15,8 @@ var words []string
 var word, runesPlayed []rune
 
 var (
-	colorTitle      Color = Lavender
+	colorBorder     Color = Teal
+	colorTitle      Color = Deepskyblue
 	colorOptions    Color = Forestgreen
 	colorPointingAt Color = Aquamarine
 )
@@ -25,9 +26,10 @@ const (
 	CORRECTRUNE   = 1
 	INCORRECTRUNE = 2
 
-	CHANGECOLORTITLE            = 3
-	CHANGECOLOROPTIONS          = 4
-	CHANGECOLOROPTIONPOINTINGAT = 5
+	CHANGECOLORBORDER           = 3
+	CHANGECOLORTITLE            = 4
+	CHANGECOLOROPTIONS          = 5
+	CHANGECOLOROPTIONPOINTINGAT = 6
 )
 
 func runCmd(name string, arg ...string) {
@@ -103,15 +105,16 @@ func inputMenu() (x, y int, enter bool) {
 
 func createVerticalMenu(cursorAt int, cursor, title string, options ...string) string {
 	for {
-		clearTerminal()
-		printColor(colorTitle, title)
+		clearDisplay()
+		buildDisplay(0, colorTitle, []string{title})
 		for i, option := range options {
 			if cursorAt == i {
-				printColor(colorPointingAt, cursor, "\t", option)
+				buildDisplay(i+2, colorPointingAt, []string{"    " + cursor + "\t" + option})
 			} else {
-				printColor(colorOptions, "\t", option)
+				buildDisplay(i+2, colorOptions, []string{"    " + "\t" + option})
 			}
 		}
+		showDisplay()
 		_, y, enter := inputMenu()
 		switch {
 		case y < 0:
@@ -127,6 +130,7 @@ func createVerticalMenu(cursorAt int, cursor, title string, options ...string) s
 				cursorAt--
 			}
 		case enter:
+			clearDisplay()
 			return options[cursorAt]
 		}
 	}
@@ -135,13 +139,13 @@ func createVerticalMenu(cursorAt int, cursor, title string, options ...string) s
 func PrincipalMenu() {
 	clearTerminal()
 	for {
-		switch createVerticalMenu(0, "-->", "------- MENU PRINCIPAL -------", "Nouvelle partie", "Paramètres", "Quitter") {
+		switch createVerticalMenu(0, "-->", "------------------------- MENU PRINCIPAL -------------------------", "Nouvelle partie", "Paramètres", "Quitter") {
 		case "Nouvelle partie":
 			play()
 		case "Paramètres":
-			clearTerminal()
 			parameters()
 		case "Quitter":
+			clearDisplay()
 			clearTerminal()
 			os.Exit(0)
 		}
@@ -151,7 +155,9 @@ func PrincipalMenu() {
 func parameters() {
 	clearTerminal()
 	for {
-		switch createVerticalMenu(0, "-->", "------- PARAMETRES -------", "Changer la couleur des titres", "Changer la couleur des options", "Changer la couleur de l'option sélectionnée", "Retour") {
+		switch createVerticalMenu(0, "-->", "--------------------------- PARAMETRES ---------------------------", "Changer la couleur de la bordure", "Changer la couleur des titres", "Changer la couleur des options", "Changer la couleur de l'option sélectionnée", "Retour") {
+		case "Changer la couleur de la bordure":
+			selectColorFamily(CHANGECOLORBORDER)
 		case "Changer la couleur des titres":
 			selectColorFamily(CHANGECOLORTITLE)
 		case "Changer la couleur des options":
@@ -168,12 +174,14 @@ func selectColorFamily(option int) {
 	clearTerminal()
 	var title string
 	switch option {
+	case CHANGECOLORBORDER:
+		title = "---------------------- COULEUR DE LA BORDURE ----------------------"
 	case CHANGECOLORTITLE:
-		title = "------- Couleur des titres -------"
+		title = "----------------------- COULEUR DES TITRES -----------------------"
 	case CHANGECOLOROPTIONS:
-		title = "------ Couleur des options ------"
+		title = "----------------------- COULEUR DES OPTIONS -----------------------"
 	case CHANGECOLOROPTIONPOINTINGAT:
-		title = "--- Couleur de l'option sélectionnée ---"
+		title = "----------------- COULEUR DE LA LIGNE DU CURSEUR -----------------"
 	}
 	switch createVerticalMenu(0, "-->", title, "Rouge", "Orange", "Jaune", "Vert", "Cyan", "Bleu", "Violet", "Rose", "Blanc", "Gris", "Marron", "Retour") {
 	case "Rouge":
@@ -211,7 +219,7 @@ func selectColor(color []Color, option int) {
 		options = append(options, colorCode(c)+c.Name)
 	}
 	options = append(options, "Retour")
-	colorName := createVerticalMenu(0, "-->", "------- Choisissez une couleur -------", options...)
+	colorName := createVerticalMenu(0, "-->", "--------------------- CHOISISSEZ UNE COULEUR ---------------------", options...)
 	if colorName == "Retour" {
 		return
 	}
@@ -221,6 +229,8 @@ func selectColor(color []Color, option int) {
 		}
 	}
 	switch option {
+	case CHANGECOLORBORDER:
+		colorBorder = newColor
 	case CHANGECOLORTITLE:
 		colorTitle = newColor
 	case CHANGECOLOROPTIONS:
@@ -285,13 +295,13 @@ func play() {
 	clearTerminal()
 	retreiveWords()
 	word = []rune((words[rand.Intn(len(words)-1)]))
-	var display []rune
+	var wordDisplay []rune
 	for i := range word {
-		display = append(display, '_')
+		wordDisplay = append(wordDisplay, '_')
 		if i != len(word)-1 {
-			display = append(display, ' ')
+			wordDisplay = append(wordDisplay, ' ')
 		}
 	}
-	fmt.Println(string(display))
+	fmt.Println(string(wordDisplay))
 	input()
 }
