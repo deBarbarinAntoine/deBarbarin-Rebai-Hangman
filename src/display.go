@@ -49,7 +49,6 @@ func buildDisplay(line int, color Color, content []string) {
 				}
 			} else if char != ' ' {
 				if len(runesLineDisplay) <= column {
-					//runesLineDisplay = append(runesLineDisplay, char)
 					break
 				} else {
 					runesLineDisplay[column] = char

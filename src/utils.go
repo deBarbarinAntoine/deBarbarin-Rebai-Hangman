@@ -279,6 +279,7 @@ func input() rune {
 			case CORRECTRUNE:
 				fmt.Println("Lettre correcte !")
 				runesPlayed = append(runesPlayed, char)
+				return char
 			case INCORRECTRUNE:
 				fmt.Println("Lettre incorrecte !")
 				runesPlayed = append(runesPlayed, char)
@@ -295,13 +296,9 @@ func play() {
 	clearTerminal()
 	retreiveWords()
 	word = []rune((words[rand.Intn(len(words)-1)]))
-	var wordDisplay []rune
-	for i := range word {
-		wordDisplay = append(wordDisplay, '_')
-		if i != len(word)-1 {
-			wordDisplay = append(wordDisplay, ' ')
-		}
+	wordDisplay := []rune(strings.Repeat("_ ", len(word)))
+	for {
+		fmt.Println(string(wordDisplay))
+		displayWord(word, wordDisplay, input())
 	}
-	fmt.Println(string(wordDisplay))
-	input()
 }

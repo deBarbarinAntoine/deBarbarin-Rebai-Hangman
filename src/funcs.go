@@ -16,7 +16,7 @@ func CheckWord(word string) {
 func displayWord(word []rune, wordDisplay []rune, char rune) []rune {
 	for i, r := range word {
 		if r == char {
-			wordDisplay[i] = char
+			wordDisplay[i*2] = char - 32
 		}
 	}
 	return wordDisplay
