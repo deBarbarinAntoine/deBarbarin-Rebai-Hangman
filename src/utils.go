@@ -1,18 +1,22 @@
 package ProjetHangman
 
 import (
-	"fmt"
 	"github.com/mattn/go-tty"
 	"log"
 	"math/rand"
 	"os"
 	"os/exec"
 	"runtime"
+	"strconv"
 	"strings"
+	"time"
 )
 
 var words []string
 var word, runesPlayed []rune
+var nbLettersFound int
+var nbErrors int
+var hangman []string
 
 var (
 	colorBorder     Color = Teal
@@ -106,12 +110,12 @@ func inputMenu() (x, y int, enter bool) {
 func createVerticalMenu(cursorAt int, cursor, title string, options ...string) string {
 	for {
 		clearDisplay()
-		buildDisplay(0, colorTitle, []string{title})
+		buildDisplay(0, 0, colorTitle, []string{title})
 		for i, option := range options {
 			if cursorAt == i {
-				buildDisplay(i+2, colorPointingAt, []string{"    " + cursor + "\t" + option})
+				buildDisplay(i+2, 4, colorPointingAt, []string{cursor + "\t" + option})
 			} else {
-				buildDisplay(i+2, colorOptions, []string{"    " + "\t" + option})
+				buildDisplay(i+2, 4, colorOptions, []string{"\t" + option})
 			}
 		}
 		showDisplay()
@@ -248,6 +252,26 @@ func retreiveWords() {
 	words = strings.Split(string(content), "\n")
 }
 
+func retreiveHangman() {
+	content, err := os.ReadFile("../Files/hangman.txt")
+	if err != nil {
+		log.Fatal(err)
+	}
+	var line int
+	var str string
+	for _, char := range content {
+		if line == 8 {
+			hangman = append(hangman, str)
+			str = ""
+			line = 0
+		}
+		str += string(char)
+		if char == '\n' {
+			line++
+		}
+	}
+}
+
 func checkRune(char rune) int {
 	for _, r := range runesPlayed {
 		if r == char {
@@ -277,28 +301,68 @@ func input() rune {
 		if (char >= 'a' && char <= 'z') || (char >= 'A' && char <= 'Z') {
 			switch checkRune(char) {
 			case CORRECTRUNE:
-				fmt.Println("Lettre correcte !")
+				//fmt.Println("Lettre correcte !")
 				runesPlayed = append(runesPlayed, char)
+				nbLettersFound++
 				return char
 			case INCORRECTRUNE:
-				fmt.Println("Lettre incorrecte !")
+				//fmt.Println("Lettre incorrecte !")
 				runesPlayed = append(runesPlayed, char)
+				nbErrors++
+				nbLettersFound--
+				return '\n'
 			case ALREADYPLAYED:
-				fmt.Println("Lettre déjà jouée !")
+				//fmt.Println("Lettre déjà jouée !")
 			}
 		} else {
-			fmt.Println("Il faut rentrer une lettre !")
+			//fmt.Println("Il faut rentrer une lettre !")
 		}
 	}
 }
 
 func play() {
+	var hasWon bool
 	clearTerminal()
 	retreiveWords()
+	retreiveHangman()
+	clearGameData()
 	word = []rune((words[rand.Intn(len(words)-1)]))
 	wordDisplay := []rune(strings.Repeat("_ ", len(word)))
 	for {
-		fmt.Println(string(wordDisplay))
+		buildDisplay(2, 4, colorTitle, []string{"Score : " + colorCode(colorPointingAt) + strconv.Itoa(nbLettersFound)})
+		buildDisplay(3, 50, colorTitle, strings.Split(hangman[nbErrors], "\n"))
+		buildDisplay(4, 10, colorOptions, []string{string(wordDisplay)})
+		buildDisplay(10, 4, colorPointingAt, []string{"Lettres déjà jouées : " + string(runesPlayed)})
+		buildDisplay(12, 4, colorOptions, []string{"Tapez une lettre pour deviner le mot"})
+		//buildDisplay(12, 4, colorOptions, []string{"Essayez de deviner le mot"})
+		buildDisplay(13, 4, colorTitle, []string{"Utilisez les flèches (haut et bas) pour changer de mode"})
+		showDisplay()
+		if strings.Join(strings.Split(string(wordDisplay), " "), "") == strings.ToUpper(string(word)) {
+			hasWon = true
+			time.Sleep(time.Second * 2)
+			break
+		}
+		if nbErrors >= len(hangman) {
+			break
+		}
 		displayWord(word, wordDisplay, input())
 	}
+	endGame(hasWon)
+}
+
+func endGame(hasWon bool) {
+	if hasWon {
+		buildDisplay(4, 4, colorTitle, []string{"Félicitations,", "vous avez gagné !", "", "Le mot était : " + strings.ToUpper(string(word)), "", "Votre score est : " + strconv.Itoa(nbLettersFound), "", "", "Attendez quelques secondes pour revenir au menu principal"})
+		showDisplay()
+	} else {
+		buildDisplay(6, 4, colorTitle, []string{"GAME OVER", "", "Le mot était : " + strings.ToUpper(string(word)), "", "", "Attendez quelques secondes pour revenir au menu principal"})
+		showDisplay()
+	}
+	time.Sleep(time.Second * 10)
+}
+
+func clearGameData() {
+	nbErrors = 0
+	nbLettersFound = 0
+	runesPlayed = append(runesPlayed[0:0])
 }
