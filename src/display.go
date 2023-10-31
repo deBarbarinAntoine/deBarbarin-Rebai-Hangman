@@ -1,11 +1,12 @@
 package ProjetHangman
 
 import (
+	"fmt"
 	"regexp"
 	"strings"
 )
 
-var display []string
+var display3d [18][75]string
 
 var border = []string{
 	"   _.-._.-._.-._.-._.-._.-._.-._.-._.-._.-._.-._.-._.-._.-._.-._.-._.-._   ",
@@ -28,28 +29,24 @@ var border = []string{
 	" `._.-._.-._.-._.-._.-._.-._.-._.-._.-._.-._.-._.-._.-._.-._.-._.-._.-._,' ",
 }
 
-func buildDisplay(line, column int, color Color, content []string) {
+func buildDisplay3d(line, column int, color Color, content []string) {
+	currentColorCode := colorCode(color)
+	line += 2
+	column += 4
 	for i, str := range content {
 		currentColumn := column
-		if line+i > 13 {
+		if line+i > 15 {
 			break
 		}
-		runesLineDisplay := []rune(display[line+2+i][4 : len(display[line+2+i])-4])
 		colorRegExp := regexp.MustCompile("\\033\\[[0-9;]+m")
 		colorCodes := colorRegExp.FindAllString(str, -1)
-		colorIndexes := colorRegExp.FindAllStringIndex(str, -1)
-		str = strings.Join(colorRegExp.Split(str, -1), "")
-		prevColorCodes := colorRegExp.FindAllString(string(runesLineDisplay), -1)
-		prevColorIndexes := colorRegExp.FindAllStringIndex(string(runesLineDisplay), -1)
-		runesLineDisplay = []rune(strings.Join(colorRegExp.Split(string(runesLineDisplay), -1), ""))
+		var colorIndexes []int
+		for i := 0; i < len(colorCodes); i++ {
+			colorIndexes = append(colorIndexes, colorRegExp.FindStringIndex(str)[0])
+			str = strings.Join(colorRegExp.Split(str, 2), "")
+		}
 
-		firstChar := true
-		var firstColumn int
-		for _, char := range str {
-			if firstChar && char != ' ' {
-				firstColumn = currentColumn
-				firstChar = false
-			}
+		for k, char := range str {
 			if char == '\t' {
 				switch {
 				case currentColumn < 14:
@@ -67,40 +64,40 @@ func buildDisplay(line, column int, color Color, content []string) {
 				case currentColumn > 60:
 				}
 			} else if char != ' ' {
-				if len(runesLineDisplay) <= currentColumn {
+				if currentColumn >= 72 {
 					break
 				} else {
-					runesLineDisplay[currentColumn] = char
+					if colorCodes != nil && colorIndexes != nil {
+						for j, colorColumn := range colorIndexes {
+							if k >= colorColumn {
+								currentColorCode = colorCodes[j]
+							}
+						}
+					}
+					display3d[line+i][currentColumn] = currentColorCode + string(char) + CLEARCOLOR
 				}
 			}
 			currentColumn++
 		}
-		if colorCodes != nil && colorIndexes != nil {
-			for i, _ := range colorCodes {
-				runesLineDisplay = append(runesLineDisplay[:colorIndexes[i][0]+firstColumn], []rune(colorCodes[i]+string(runesLineDisplay[colorIndexes[i][0]+firstColumn:]))...)
-			}
-		}
-		if prevColorCodes != nil && prevColorIndexes != nil {
-			var indent int
-			if firstColumn < prevColorIndexes[0][0] {
-				indent = column - firstColumn
-			}
-			for i, _ := range prevColorCodes {
-				runesLineDisplay = append(runesLineDisplay[:prevColorIndexes[i][0]+indent], []rune(prevColorCodes[i]+string(runesLineDisplay[prevColorIndexes[i][0]+indent:]))...)
-			}
-		}
-		display[line+2+i] = display[line+2+i][:4] + colorCode(color) + string(runesLineDisplay) + CLEARCOLOR + display[line+2+i][len(display[line+2+i])-4:]
 	}
 }
 
-func showDisplay() {
+func showDisplay3d() {
 	clearTerminal()
-	for _, str := range display {
-		printColor(colorBorder, str[:len(str)-4], colorCode(colorBorder), str[len(str)-4:])
+	for _, line := range display3d {
+		for _, char := range line {
+			fmt.Print(char)
+		}
+		fmt.Println()
 	}
-	clearDisplay()
+	clearDisplay3d()
 }
 
-func clearDisplay() {
-	display = append(display[0:0], border...)
+func clearDisplay3d() {
+	display3d = [18][75]string{}
+	for i, str := range border {
+		for j, char := range str {
+			display3d[i][j] = colorCode(colorBorder) + string(char) + CLEARCOLOR
+		}
+	}
 }

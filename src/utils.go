@@ -14,9 +14,12 @@ import (
 
 var words []string
 var word, runesPlayed []rune
-var nbLettersFound int
-var nbErrors int
+var nbLettersFound, nbErrors, score int
 var hangman []string
+var firstGame = true
+var name string
+var difficulty int
+var toStrDifficulty string
 
 var (
 	colorBorder     Color = Teal
@@ -29,11 +32,18 @@ const (
 	ALREADYPLAYED = 0
 	CORRECTRUNE   = 1
 	INCORRECTRUNE = 2
+	CORRECTWORD   = 3
+	INCORRECTWORD = 4
 
 	CHANGECOLORBORDER           = 3
 	CHANGECOLORTITLE            = 4
 	CHANGECOLOROPTIONS          = 5
 	CHANGECOLOROPTIONPOINTINGAT = 6
+
+	EASY      = 4
+	MEDIUM    = 7
+	DIFFICULT = 10
+	LEGENDARY = 13
 )
 
 func runCmd(name string, arg ...string) {
@@ -109,16 +119,16 @@ func inputMenu() (x, y int, enter bool) {
 
 func createVerticalMenu(cursorAt int, cursor, title string, options ...string) string {
 	for {
-		clearDisplay()
-		buildDisplay(0, 0, colorTitle, []string{title})
+		clearDisplay3d()
+		buildDisplay3d(0, 0, colorTitle, []string{title})
 		for i, option := range options {
 			if cursorAt == i {
-				buildDisplay(i+2, 4, colorPointingAt, []string{cursor + "\t" + option})
+				buildDisplay3d(i+2, 4, colorPointingAt, []string{cursor + "\t" + option})
 			} else {
-				buildDisplay(i+2, 4, colorOptions, []string{"\t" + option})
+				buildDisplay3d(i+2, 4, colorOptions, []string{"\t" + option})
 			}
 		}
-		showDisplay()
+		showDisplay3d()
 		_, y, enter := inputMenu()
 		switch {
 		case y < 0:
@@ -134,7 +144,6 @@ func createVerticalMenu(cursorAt int, cursor, title string, options ...string) s
 				cursorAt--
 			}
 		case enter:
-			clearDisplay()
 			return options[cursorAt]
 		}
 	}
@@ -145,11 +154,10 @@ func PrincipalMenu() {
 	for {
 		switch createVerticalMenu(0, "-->", "------------------------- MENU PRINCIPAL -------------------------", "Nouvelle partie", "Paramètres", "Quitter") {
 		case "Nouvelle partie":
-			play()
+			setName()
 		case "Paramètres":
 			parameters()
 		case "Quitter":
-			clearDisplay()
 			clearTerminal()
 			os.Exit(0)
 		}
@@ -253,6 +261,7 @@ func retreiveWords() {
 }
 
 func retreiveHangman() {
+	hangman = append(hangman[0:0])
 	content, err := os.ReadFile("../Files/hangman.txt")
 	if err != nil {
 		log.Fatal(err)
@@ -260,14 +269,14 @@ func retreiveHangman() {
 	var line int
 	var str string
 	for _, char := range content {
+		str += string(char)
+		if char == '\n' {
+			line++
+		}
 		if line == 8 {
 			hangman = append(hangman, str)
 			str = ""
 			line = 0
-		}
-		str += string(char)
-		if char == '\n' {
-			line++
 		}
 	}
 }
@@ -286,77 +295,288 @@ func checkRune(char rune) int {
 	return INCORRECTRUNE
 }
 
-func input() rune {
+func input() (rune, int, bool) {
 	tty, err := tty.Open()
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer tty.Close()
-
+	var char1ArrowKey, char2ArrowKey bool
 	for {
 		char, err := tty.ReadRune()
 		if err != nil {
 			log.Fatal(err)
 		}
-		if (char >= 'a' && char <= 'z') || (char >= 'A' && char <= 'Z') {
+		switch char {
+		case 27: //First rune code for arrows
+			char1ArrowKey = true
+
+		case 91: //Second rune code for arrows
+			if char1ArrowKey {
+				char2ArrowKey = true
+			}
+
+		case 65, 66, 67, 68: //Arrow
+			if char1ArrowKey && char2ArrowKey {
+				return 182, CORRECTRUNE, true // returns: ¶, Correct Rune , Arrow
+			}
+
+		default:
+			char1ArrowKey, char2ArrowKey = false, false
+		}
+		if char >= 'A' && char <= 'Z' {
+			char += 32
+		}
+		if char >= 'a' && char <= 'z' {
 			switch checkRune(char) {
 			case CORRECTRUNE:
-				//fmt.Println("Lettre correcte !")
 				runesPlayed = append(runesPlayed, char)
-				nbLettersFound++
-				return char
+				return char, CORRECTRUNE, false
 			case INCORRECTRUNE:
-				//fmt.Println("Lettre incorrecte !")
 				runesPlayed = append(runesPlayed, char)
 				nbErrors++
-				nbLettersFound--
-				return '\n'
+				score -= 5
+				return '\n', INCORRECTRUNE, false
 			case ALREADYPLAYED:
-				//fmt.Println("Lettre déjà jouée !")
+				return '\n', ALREADYPLAYED, false
 			}
-		} else {
-			//fmt.Println("Il faut rentrer une lettre !")
 		}
 	}
 }
 
+func wordInput() (rune, bool, bool) {
+	tty, err := tty.Open()
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer tty.Close()
+	var char1ArrowKey, char2ArrowKey bool
+	for {
+		char, err := tty.ReadRune()
+		if err != nil {
+			log.Fatal(err)
+		}
+		switch char {
+		case 27: //First rune code for arrows
+			char1ArrowKey = true
+
+		case 91: //Second rune code for arrows
+			if char1ArrowKey {
+				char2ArrowKey = true
+			}
+
+		case 65, 66, 67, 68: //Arrow
+			if char1ArrowKey && char2ArrowKey {
+				return 182, false, true // returns: ¶, No Enter, Arrow
+			}
+
+		case 13: //Enter
+			return 182, true, false // returns: ¶, Enter, No Arrow
+
+		default:
+			char1ArrowKey, char2ArrowKey = false, false
+		}
+		if char >= 'A' && char <= 'Z' {
+			char += 32
+		}
+		if (char >= 'a' && char <= 'z') || char == 8 {
+			return char, false, false
+		}
+	}
+}
+
+func setName() {
+	var incorrectName bool
+	for {
+		buildDisplay3d(0, 0, colorTitle, []string{"----------------------- SAISISSEZ VOTRE NOM -----------------------"})
+		buildDisplay3d(2, 2, colorOptions, []string{"Seuls les lettres sont autorisées (sans espace)"})
+		if incorrectName {
+			buildDisplay3d(4, 2, Red, []string{"Votre nom doit avoir au moins 3 lettres !"})
+		}
+		buildDisplay3d(6, 4, colorOptions, []string{"Nom :"})
+		buildDisplay3d(6, 10, colorPointingAt, []string{name})
+		showDisplay3d()
+		char, isSet, _ := wordInput()
+		if isSet {
+			if len(name) > 2 {
+				break
+			} else {
+				incorrectName = true
+			}
+		}
+		if char == 8 {
+			if len(name) > 0 {
+				name = string([]rune(name)[:len(name)-1])
+			}
+		} else {
+			name += string(char)
+		}
+	}
+	setDifficulty()
+	play()
+}
+
+func setDifficulty() {
+	clearTerminal()
+	for {
+		switch createVerticalMenu(0, "-->", "---------------------- CHOISIR LA DIFFICULTÉ ----------------------", "Facile", "Intermédiaire", "Difficile", "Légendaire") {
+		case "Facile":
+			difficulty = EASY
+			toStrDifficulty = "Facile"
+			return
+		case "Intermédiaire":
+			difficulty = MEDIUM
+			toStrDifficulty = "Intermédiaire"
+			return
+		case "Difficile":
+			difficulty = DIFFICULT
+			toStrDifficulty = "Difficile"
+			return
+		case "Légendaire":
+			difficulty = LEGENDARY
+			toStrDifficulty = "Légendaire"
+			return
+		}
+	}
+}
+
+func chooseWord(difficulty int) []rune {
+	var possibleWords []string
+	for _, str := range words {
+		if len(str) >= difficulty-2 && len(str) <= difficulty {
+			possibleWords = append(possibleWords, str)
+		}
+		if difficulty == LEGENDARY {
+			if len(str) > difficulty {
+				possibleWords = append(possibleWords, str)
+			}
+		}
+	}
+	if len(possibleWords) < 10 {
+		var i int
+		for _, str := range words {
+			i++
+			if len(str) == difficulty-i-2 || len(str) == difficulty+i {
+				possibleWords = append(possibleWords, str)
+				if len(possibleWords) > 10 {
+					break
+				}
+			}
+		}
+	}
+	return []rune((possibleWords[rand.Intn(len(possibleWords)-1)]))
+}
+
+func hint(wordDisplay []rune) []rune {
+	if difficulty != LEGENDARY {
+		i := rand.Intn(len(word) - 1)
+		char := word[i]
+		wordDisplay[i*2] = char - 32
+	}
+	return wordDisplay
+}
+
 func play() {
 	var hasWon bool
+	if firstGame {
+		retreiveWords()
+		retreiveHangman()
+		firstGame = false
+	}
 	clearTerminal()
-	retreiveWords()
-	retreiveHangman()
 	clearGameData()
-	word = []rune((words[rand.Intn(len(words)-1)]))
+	word = chooseWord(difficulty)
 	wordDisplay := []rune(strings.Repeat("_ ", len(word)))
+	hint(wordDisplay)
+	var char rune
+	status := CORRECTRUNE
+	var wordMode bool
+	var try string
 	for {
-		buildDisplay(2, 4, colorTitle, []string{"Score : " + colorCode(colorPointingAt) + strconv.Itoa(nbLettersFound)})
-		buildDisplay(3, 50, colorTitle, strings.Split(hangman[nbErrors], "\n"))
-		buildDisplay(4, 10, colorOptions, []string{string(wordDisplay)})
-		buildDisplay(10, 4, colorPointingAt, []string{"Lettres déjà jouées : " + string(runesPlayed)})
-		buildDisplay(12, 4, colorOptions, []string{"Tapez une lettre pour deviner le mot"})
-		//buildDisplay(12, 4, colorOptions, []string{"Essayez de deviner le mot"})
-		buildDisplay(13, 4, colorTitle, []string{"Utilisez les flèches (haut et bas) pour changer de mode"})
-		showDisplay()
+		buildDisplay3d(2, 4, colorTitle, []string{"Score : " + colorCode(colorPointingAt) + strconv.Itoa(score)})
+		buildDisplay3d(2, 38, colorTitle, []string{"Difficulté : " + colorCode(colorPointingAt) + toStrDifficulty})
+		buildDisplay3d(4, 52, colorTitle, strings.Split(hangman[nbErrors], "\n"))
+		buildDisplay3d(4, 10, colorOptions, []string{string(wordDisplay)})
+		buildDisplay3d(10, 4, colorPointingAt, []string{"Lettres déjà jouées : " + string(runesPlayed)})
+		switch status {
+		case ALREADYPLAYED:
+			buildDisplay3d(11, 6, Orangered, []string{"Vous avez déjà joué cette lettre !"})
+		case INCORRECTRUNE:
+			buildDisplay3d(11, 6, Red, []string{"Lettre incorrecte : " + strconv.Itoa(len(hangman)-1-nbErrors) + " essais restants"})
+		case CORRECTWORD:
+			buildDisplay3d(11, 6, Limegreen, []string{"Félicitations, vous avez deviné le mot !"})
+		case INCORRECTWORD:
+			buildDisplay3d(11, 6, Red, []string{"Mot incorrect : " + strconv.Itoa(len(hangman)-1-nbErrors) + " essais restants"})
+		default:
+			break
+		}
+		if wordMode {
+			buildDisplay3d(12, 4, colorOptions, []string{"Essayez de deviner le mot :"})
+			buildDisplay3d(12, 32, colorPointingAt, []string{try})
+		} else {
+			buildDisplay3d(12, 4, colorOptions, []string{"Tapez une lettre pour deviner le mot"})
+		}
+		buildDisplay3d(13, 4, colorTitle, []string{"Utilisez les flèches (haut et bas) pour changer de mode"})
+		showDisplay3d()
 		if strings.Join(strings.Split(string(wordDisplay), " "), "") == strings.ToUpper(string(word)) {
 			hasWon = true
 			time.Sleep(time.Second * 2)
 			break
 		}
-		if nbErrors >= len(hangman) {
+		if wordMode {
+			var singleInput rune
+			var enterPressed bool
+			var charMode bool
+			singleInput, enterPressed, charMode = wordInput()
+			if !enterPressed && !charMode {
+				if singleInput != 8 {
+					try += string(singleInput)
+				} else {
+					if len(try) > 0 {
+						try = string([]rune(try)[:len(try)-1])
+					}
+				}
+			} else {
+				if enterPressed {
+					if checkWord(word, try) {
+						score += nbRemainingLetters(wordDisplay) * 2
+						status = CORRECTWORD
+						revealWord(word, wordDisplay)
+						try = ""
+					} else {
+						score -= nbRemainingLetters(wordDisplay) * 2
+						nbErrors += 2
+						status = INCORRECTWORD
+						try = ""
+					}
+				}
+				if charMode {
+					wordMode = false
+					try = ""
+				}
+			}
+		} else {
+			char, status, wordMode = input()
+			displayWord(word, wordDisplay, char)
+			if wordMode {
+				status = CORRECTRUNE
+			}
+		}
+		if nbErrors >= len(hangman)-1 {
 			break
 		}
-		displayWord(word, wordDisplay, input())
 	}
 	endGame(hasWon)
 }
 
 func endGame(hasWon bool) {
 	if hasWon {
-		buildDisplay(4, 4, colorTitle, []string{"Félicitations,", "vous avez gagné !", "", "Le mot était : " + strings.ToUpper(string(word)), "", "Votre score est : " + strconv.Itoa(nbLettersFound), "", "", "Attendez quelques secondes pour revenir au menu principal"})
-		showDisplay()
+		buildDisplay3d(4, 4, colorTitle, []string{"Félicitations,", "vous avez gagné !", "", "Le mot était : " + strings.ToUpper(string(word)), "", "Votre score est : " + strconv.Itoa(score), "", "", "Attendez quelques secondes pour revenir au menu principal"})
+		showDisplay3d()
 	} else {
-		buildDisplay(6, 4, colorTitle, []string{"GAME OVER", "", "Le mot était : " + strings.ToUpper(string(word)), "", "", "Attendez quelques secondes pour revenir au menu principal"})
-		showDisplay()
+		buildDisplay3d(6, 4, colorTitle, []string{"GAME OVER", "", "Le mot était : " + strings.ToUpper(string(word)), "", "", "Attendez quelques secondes pour revenir au menu principal"})
+		buildDisplay3d(3, 52, colorTitle, strings.Split(hangman[len(hangman)-1], "\n"))
+		showDisplay3d()
 	}
 	time.Sleep(time.Second * 10)
 }
@@ -364,5 +584,6 @@ func endGame(hasWon bool) {
 func clearGameData() {
 	nbErrors = 0
 	nbLettersFound = 0
+	score = 0
 	runesPlayed = append(runesPlayed[0:0])
 }

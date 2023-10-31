@@ -1,7 +1,6 @@
 package ProjetHangman
 
 import (
-	"fmt"
 	"strconv"
 )
 
@@ -114,12 +113,4 @@ const CLEARCOLOR = "\033[0m"
 
 func colorCode(color Color) string {
 	return "\033[38;2;" + strconv.Itoa(color.R) + ";" + strconv.Itoa(color.G) + ";" + strconv.Itoa(color.B) + "m"
-}
-
-func printColor(color Color, strs ...string) {
-	var text string
-	for _, str := range strs {
-		text += str
-	}
-	fmt.Println(colorCode(color), text, CLEARCOLOR)
 }
