@@ -182,6 +182,8 @@ func chargeParameters() {
 	if err != nil {
 		fmt.Println(colorCode(Red), "Erreur de récupération des données...", CLEARCOLOR)
 		fmt.Println()
+		fmt.Println(colorCode(Aquamarine), "Il est conseillé de supprimer le fichier config.txt\n    dans le dossier Files afin de résoudre le problème.", CLEARCOLOR)
+		fmt.Println()
 		fmt.Println(colorCode(Orange), "Données récupérées :", CLEARCOLOR)
 		fmt.Println(colorCode(Orange), string(savedEntries), CLEARCOLOR)
 		log.Fatal(err)
