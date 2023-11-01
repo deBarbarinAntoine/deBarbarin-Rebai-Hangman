@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode"
 )
 
 var words []string
@@ -19,7 +20,6 @@ var hangman []string
 var firstGame = true
 var name string
 var difficulty int
-var toStrDifficulty string
 
 var (
 	colorBorder     Color = Teal
@@ -152,9 +152,11 @@ func createVerticalMenu(cursorAt int, cursor, title string, options ...string) s
 func PrincipalMenu() {
 	clearTerminal()
 	for {
-		switch createVerticalMenu(0, "-->", "------------------------- MENU PRINCIPAL -------------------------", "Nouvelle partie", "Paramètres", "Quitter") {
+		switch createVerticalMenu(0, "-->", "------------------------- MENU PRINCIPAL -------------------------", "Nouvelle partie", "Meilleurs scores", "Paramètres", "Quitter") {
 		case "Nouvelle partie":
 			setName()
+		case "Meilleurs scores":
+			topScores()
 		case "Paramètres":
 			parameters()
 		case "Quitter":
@@ -249,6 +251,38 @@ func selectColor(color []Color, option int) {
 		colorOptions = newColor
 	case CHANGECOLOROPTIONPOINTINGAT:
 		colorPointingAt = newColor
+	}
+}
+
+func topScores() {
+	clearTerminal()
+	filterTopTenGames()
+	buildDisplay3d(0, 0, colorTitle, []string{"------------------------ MEILLEURS SCORES ------------------------"})
+	buildDisplay3d(1, 0, colorOptions, scoreDisplay)
+	for i, game := range savedGames {
+		gameDifficulty := toStringDifficulty(game.Difficulty)
+		buildDisplay3d(3+i, 6, colorPointingAt, []string{game.Name})
+		buildDisplay3d(3+i, 25, colorPointingAt, []string{strconv.Itoa(game.Score)})
+		buildDisplay3d(3+i, 33, colorPointingAt, []string{gameDifficulty})
+		buildDisplay3d(3+i, 49, colorPointingAt, []string{game.Dictionnary})
+		if i > 8 {
+			break
+		}
+	}
+	showDisplay3d()
+	tty, err := tty.Open()
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer tty.Close()
+	for {
+		char, err := tty.ReadRune()
+		if err != nil {
+			log.Fatal(err)
+		}
+		if char == 13 { //Enter
+			break
+		}
 	}
 }
 
@@ -391,14 +425,15 @@ func setName() {
 		buildDisplay3d(0, 0, colorTitle, []string{"----------------------- SAISISSEZ VOTRE NOM -----------------------"})
 		buildDisplay3d(2, 2, colorOptions, []string{"Seuls les lettres sont autorisées (sans espace)"})
 		if incorrectName {
-			buildDisplay3d(4, 2, Red, []string{"Votre nom doit avoir au moins 3 lettres !"})
+			buildDisplay3d(4, 2, Red, []string{"Votre nom doit avoir entre 3 et 15 lettres !"})
 		}
 		buildDisplay3d(6, 4, colorOptions, []string{"Nom :"})
 		buildDisplay3d(6, 10, colorPointingAt, []string{name})
 		showDisplay3d()
 		char, isSet, _ := wordInput()
 		if isSet {
-			if len(name) > 2 {
+			if len(name) > 2 && len(name) < 16 {
+				name = string(append([]rune{unicode.ToUpper([]rune(name)[0])}, []rune(name)[1:]...))
 				break
 			} else {
 				incorrectName = true
@@ -422,19 +457,15 @@ func setDifficulty() {
 		switch createVerticalMenu(0, "-->", "---------------------- CHOISIR LA DIFFICULTÉ ----------------------", "Facile", "Intermédiaire", "Difficile", "Légendaire") {
 		case "Facile":
 			difficulty = EASY
-			toStrDifficulty = "Facile"
 			return
 		case "Intermédiaire":
 			difficulty = MEDIUM
-			toStrDifficulty = "Intermédiaire"
 			return
 		case "Difficile":
 			difficulty = DIFFICULT
-			toStrDifficulty = "Difficile"
 			return
 		case "Légendaire":
 			difficulty = LEGENDARY
-			toStrDifficulty = "Légendaire"
 			return
 		}
 	}
@@ -494,7 +525,7 @@ func play() {
 	var try string
 	for {
 		buildDisplay3d(2, 4, colorTitle, []string{"Score : " + colorCode(colorPointingAt) + strconv.Itoa(score)})
-		buildDisplay3d(2, 38, colorTitle, []string{"Difficulté : " + colorCode(colorPointingAt) + toStrDifficulty})
+		buildDisplay3d(2, 38, colorTitle, []string{"Difficulté : " + colorCode(colorPointingAt) + toStringDifficulty(difficulty)})
 		buildDisplay3d(4, 52, colorTitle, strings.Split(hangman[nbErrors], "\n"))
 		buildDisplay3d(4, 10, colorOptions, []string{string(wordDisplay)})
 		buildDisplay3d(10, 4, colorPointingAt, []string{"Lettres déjà jouées : " + string(runesPlayed)})
@@ -573,6 +604,7 @@ func endGame(hasWon bool) {
 	if hasWon {
 		buildDisplay3d(4, 4, colorTitle, []string{"Félicitations,", "vous avez gagné !", "", "Le mot était : " + strings.ToUpper(string(word)), "", "Votre score est : " + strconv.Itoa(score), "", "", "Attendez quelques secondes pour revenir au menu principal"})
 		showDisplay3d()
+		saveGame()
 	} else {
 		buildDisplay3d(6, 4, colorTitle, []string{"GAME OVER", "", "Le mot était : " + strings.ToUpper(string(word)), "", "", "Attendez quelques secondes pour revenir au menu principal"})
 		buildDisplay3d(3, 52, colorTitle, strings.Split(hangman[len(hangman)-1], "\n"))

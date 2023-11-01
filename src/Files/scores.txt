@@ -1,0 +1,5 @@
+{"Name":"Thorgan","Score":50,"Word":"ruiniez","Difficulty":7,"Dictionnary":"Scrabble"},
+{"Name":"Thorgan","Score":10,"Word":"lion","Difficulty":4,"Dictionnary":"Scrabble"},
+{"Name":"Antoine","Score":41,"Word":"cloitrer","Difficulty":10,"Dictionnary":"Scrabble"},
+{"Name":"Thorgan","Score":0,"Word":"yues","Difficulty":4,"Dictionnary":"Scrabble"},
+{"Name":"Antoine","Score":70,"Word":"pompistes","Difficulty":10,"Dictionnary":"Scrabble"}

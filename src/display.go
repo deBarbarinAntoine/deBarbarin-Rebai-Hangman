@@ -29,6 +29,22 @@ var border = []string{
 	" `._.-._.-._.-._.-._.-._.-._.-._.-._.-._.-._.-._.-._.-._.-._.-._.-._.-._,' ",
 }
 
+var scoreDisplay = []string{
+	"    │       NOM       │ SCORE │   DIFFICULTÉ   │   DICTIONNAIRE    ",
+	"────┼─────────────────┼───────┼────────────────┼───────────────────",
+	"  1 │                 │       │                │                   ",
+	"  2 │                 │       │                │                   ",
+	"  3 │                 │       │                │                   ",
+	"  4 │                 │       │                │                   ",
+	"  5 │                 │       │                │                   ",
+	"  6 │                 │       │                │                   ",
+	"  7 │                 │       │                │                   ",
+	"  8 │                 │       │                │                   ",
+	"  9 │                 │       │                │                   ",
+	" 10 │                 │       │                │                   ",
+	"              [Tapez sur Entrée pour revenir au menu]              ",
+}
+
 func buildDisplay3d(line, column int, color Color, content []string) {
 	currentColorCode := colorCode(color)
 	line += 2

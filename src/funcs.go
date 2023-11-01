@@ -1,7 +1,12 @@
 package ProjetHangman
 
 import (
+	"encoding/json"
+	"fmt"
+	"log"
 	"math/rand"
+	"os"
+	"sort"
 )
 
 type Game struct {
@@ -11,6 +16,8 @@ type Game struct {
 	Difficulty  int
 	Dictionnary string
 }
+
+var savedGames []Game
 
 func checkWord(word []rune, try string) bool {
 	return try == string(word)
@@ -78,12 +85,65 @@ func Randplay(n int) string {
 }
 
 func saveGame() {
-	/*currentGame := Game{
+	currentGame := Game{
 		Name:        name,
 		Score:       score,
 		Word:        string(word),
 		Difficulty:  difficulty,
 		Dictionnary: "Scrabble",
-	}*/
+	}
+	newEntry, err := json.Marshal(currentGame)
+	if err != nil {
+		log.Fatal(err)
+	}
+	file, err := os.OpenFile("../Files/scores.txt", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer file.Close()
 
+	newEntry = append([]byte{',', '\n'}, newEntry...)
+	_, err = file.Write(newEntry)
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
+func retreiveSavedGames() {
+	savedEntries, err := os.ReadFile("../Files/scores.txt")
+	if err != nil {
+		fmt.Println("Aucune sauvegarde détectée...")
+		return
+	}
+	savedEntries = append([]byte{'[', '\n'}, savedEntries...)
+	savedEntries = append(savedEntries, '\n', ']')
+	err = json.Unmarshal(savedEntries, &savedGames)
+	if err != nil {
+		fmt.Println("Erreur de récupération des données...")
+		fmt.Println()
+		fmt.Println("Données récupérées :")
+		fmt.Println(string(savedEntries))
+		log.Fatal(err)
+	}
+}
+
+func filterTopTenGames() []Game {
+	retreiveSavedGames()
+	sort.SliceStable(savedGames, func(i, j int) bool { return savedGames[i].Score > savedGames[j].Score })
+	return savedGames
+}
+
+func toStringDifficulty(difficulty int) string {
+	switch difficulty {
+	case EASY:
+		return "Facile"
+	case MEDIUM:
+		return "Intermédiaire"
+	case DIFFICULT:
+		return "Difficile"
+	case LEGENDARY:
+		return "Légendaire"
+	default:
+		return "Inconnu"
+	}
 }
