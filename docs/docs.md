@@ -1,6 +1,7 @@
 # Gestion de projet
 
 Dès le premier jour, nous nous sommes posés pour faire une pluie d'idées :
+
     - faire une liste de fonctionnalités du jeu
     - organiser les fichiers du projet selon les fonctionnalités du jeu
     - faire un plan du jeu/menus
@@ -8,6 +9,7 @@ Dès le premier jour, nous nous sommes posés pour faire une pluie d'idées :
     - diviser les tâches
 
 Ensuite est venue la liste de fonctionnalités :
+
     - menu principal
     - acquisition des mots (dictionnaire)
     - mot aléatoire
@@ -20,6 +22,7 @@ Ensuite est venue la liste de fonctionnalités :
     - sauvegarde du score dans un fichier externe
 
 Enfin, le plan du jeu :
+
     - Menu principal
         - Nouvelle partie
             - Saisir son nom
@@ -33,6 +36,7 @@ Enfin, le plan du jeu :
         - Quitter
 
 Voici nos idées sur l'organisation de notre temps :
+
     - peer programing pendant les cours
     - travail perso à la maison
 
