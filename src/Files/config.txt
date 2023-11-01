@@ -1,0 +1,1 @@
+{"Name":"Antoine","DictionaryPath":"../Files/Dictionaries/ospd3_expurgated.txt","ColorBorder":{"Name":"Cornflowerblue","R":100,"G":149,"B":237},"ColorTitle":{"Name":"Teal","R":0,"G":128,"B":128},"ColorOptions":{"Name":"Deepskyblue","R":0,"G":191,"B":255},"ColorPointingAt":{"Name":"Turquoise","R":64,"G":224,"B":208}}

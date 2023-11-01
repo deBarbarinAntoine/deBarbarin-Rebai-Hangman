@@ -1,6 +1,7 @@
 package ProjetHangman
 
 import (
+	"fmt"
 	"github.com/mattn/go-tty"
 	"log"
 	"math/rand"
@@ -20,6 +21,8 @@ var hangman []string
 var firstGame = true
 var name string
 var difficulty int
+var personalDictionary bool
+var dictionaryPath string
 
 var (
 	colorBorder     Color = Teal
@@ -66,6 +69,44 @@ func clearTerminal() {
 	default:
 		runCmd("clear")
 	}
+}
+
+func Run(args []string) {
+	chargeParameters()
+	if len(args) > 1 {
+		content, err := os.ReadFile(args[1])
+		if err != nil {
+			fmt.Println(colorCode(Red), "Argument invalide", CLEARCOLOR)
+			fmt.Println()
+			fmt.Println(colorCode(Orangered), "Si vous voulez utiliser un dictionnaire personnalisé,\nsaisissez un chemin valide en argument", CLEARCOLOR)
+			fmt.Println(colorCode(Limegreen), "Le fichier doit être formaté d'une manière particulière :\n\t- il doit y avoir un mot par ligne\n\t- les mots ne doivent pas être accentués\n\t- il ne peut y avoir ni espace ni chiffres, ni signes (- , . : ; etc.)", CLEARCOLOR)
+			fmt.Println(colorCode(Aquamarine), "[Veuillez attendre quelques secondes...]", CLEARCOLOR)
+			time.Sleep(time.Second * 5)
+		} else {
+			words = strings.Split(string(content), "\n")
+			if len(words) < 10 {
+				fmt.Println(colorCode(Red), "Dictionnaire trop court !", CLEARCOLOR)
+				fmt.Println()
+				fmt.Println(colorCode(Orangered), "Il faut que le dictionnaire ait au moins 10 mots !", CLEARCOLOR)
+				fmt.Println()
+				fmt.Println(colorCode(Salmon), "Attention !", CLEARCOLOR)
+				fmt.Println(colorCode(Limegreen), "Le fichier doit être formaté d'une manière particulière :\n\t- il doit y avoir un mot par ligne\n\t- les mots ne doivent pas être accentués\n\t- il ne peut y avoir ni espace ni chiffres, ni signes (- , . : ; etc.)", CLEARCOLOR)
+				fmt.Println(colorCode(Aquamarine), "[Veuillez attendre quelques secondes...]", CLEARCOLOR)
+				time.Sleep(time.Second * 5)
+			} else {
+				if checkDictionary() {
+					personalDictionary = true
+				} else {
+					fmt.Println(colorCode(Red), "Dictionnaire invalide", CLEARCOLOR)
+					fmt.Println()
+					fmt.Println(colorCode(Orangered), "Le fichier doit être formaté d'une manière particulière :\n\t- il doit y avoir un mot par ligne\n\t- les mots ne doivent pas être accentués\n\t- il ne peut y avoir ni espace ni chiffres, ni signes (- , . : ; etc.)", CLEARCOLOR)
+					fmt.Println(colorCode(Aquamarine), "[Veuillez attendre quelques secondes...]", CLEARCOLOR)
+					time.Sleep(time.Second * 5)
+				}
+			}
+		}
+	}
+	principalMenu()
 }
 
 func inputMenu() (x, y int, enter bool) {
@@ -149,7 +190,7 @@ func createVerticalMenu(cursorAt int, cursor, title string, options ...string) s
 	}
 }
 
-func PrincipalMenu() {
+func principalMenu() {
 	clearTerminal()
 	for {
 		switch createVerticalMenu(0, "-->", "------------------------- MENU PRINCIPAL -------------------------", "Nouvelle partie", "Meilleurs scores", "Paramètres", "Quitter") {
@@ -161,6 +202,7 @@ func PrincipalMenu() {
 			parameters()
 		case "Quitter":
 			clearTerminal()
+			saveParameters()
 			os.Exit(0)
 		}
 	}
@@ -169,7 +211,9 @@ func PrincipalMenu() {
 func parameters() {
 	clearTerminal()
 	for {
-		switch createVerticalMenu(0, "-->", "--------------------------- PARAMETRES ---------------------------", "Changer la couleur de la bordure", "Changer la couleur des titres", "Changer la couleur des options", "Changer la couleur de l'option sélectionnée", "Retour") {
+		switch createVerticalMenu(0, "-->", "--------------------------- PARAMETRES ---------------------------", "Changer de dictionnaire", "Changer la couleur de la bordure", "Changer la couleur des titres", "Changer la couleur des options", "Changer la couleur de l'option sélectionnée", "Retour") {
+		case "Changer de dictionnaire":
+			changeDictionary()
 		case "Changer la couleur de la bordure":
 			selectColorFamily(CHANGECOLORBORDER)
 		case "Changer la couleur des titres":
@@ -178,6 +222,25 @@ func parameters() {
 			selectColorFamily(CHANGECOLOROPTIONS)
 		case "Changer la couleur de l'option sélectionnée":
 			selectColorFamily(CHANGECOLOROPTIONPOINTINGAT)
+		case "Retour":
+			return
+		}
+	}
+}
+
+func changeDictionary() {
+	clearTerminal()
+	for {
+		switch createVerticalMenu(0, "-->", "--------------------- CHANGER DE DICTIONNAIRE ---------------------", "Dictionnaire du Scrabble français", "Dictionnaire du Scrabble anglais", "Dictionnaire italien", "Retour") {
+		case "Dictionnaire du Scrabble français":
+			dictionaryPath = "../Files/Dictionaries/ods5.txt"
+			return
+		case "Dictionnaire du Scrabble anglais":
+			dictionaryPath = "../Files/Dictionaries/ospd3_expurgated.txt"
+			return
+		case "Dictionnaire italien":
+			dictionaryPath = "../Files/Dictionaries/italiano.txt"
+			return
 		case "Retour":
 			return
 		}
@@ -256,7 +319,7 @@ func selectColor(color []Color, option int) {
 
 func topScores() {
 	clearTerminal()
-	filterTopTenGames()
+	sortTopTenGames()
 	buildDisplay3d(0, 0, colorTitle, []string{"------------------------ MEILLEURS SCORES ------------------------"})
 	buildDisplay3d(1, 0, colorOptions, scoreDisplay)
 	for i, game := range savedGames {
@@ -287,11 +350,19 @@ func topScores() {
 }
 
 func retreiveWords() {
-	content, err := os.ReadFile("../Files/Dictionaries/ods5.txt")
+	if dictionaryPath == "" {
+		dictionaryPath = "../Files/Dictionaries/ods5.txt"
+	}
+	content, err := os.ReadFile(dictionaryPath)
 	if err != nil {
 		log.Fatal(err)
 	}
-	words = strings.Split(string(content), "\n")
+	if checkDictionary() {
+		words = strings.Split(string(content), "\n")
+	} else {
+		fmt.Println(colorCode(Red), "Erreur d'acquisition des mots du dictionnaire", CLEARCOLOR)
+		time.Sleep(time.Second * 2)
+	}
 }
 
 func retreiveHangman() {
@@ -510,7 +581,9 @@ func hint(wordDisplay []rune) []rune {
 func play() {
 	var hasWon bool
 	if firstGame {
-		retreiveWords()
+		if !personalDictionary {
+			retreiveWords()
+		}
 		retreiveHangman()
 		firstGame = false
 	}
@@ -525,10 +598,11 @@ func play() {
 	var try string
 	for {
 		buildDisplay3d(2, 4, colorTitle, []string{"Score : " + colorCode(colorPointingAt) + strconv.Itoa(score)})
-		buildDisplay3d(2, 38, colorTitle, []string{"Difficulté : " + colorCode(colorPointingAt) + toStringDifficulty(difficulty)})
+		buildDisplay3d(1, 38, colorTitle, []string{"Difficulté : " + colorCode(colorPointingAt) + toStringDifficulty(difficulty)})
+		buildDisplay3d(2, 38, colorTitle, []string{"Dictionnaire : " + colorCode(colorPointingAt) + dictionaryName()})
 		buildDisplay3d(4, 52, colorTitle, strings.Split(hangman[nbErrors], "\n"))
 		buildDisplay3d(4, 10, colorOptions, []string{string(wordDisplay)})
-		buildDisplay3d(10, 4, colorPointingAt, []string{"Lettres déjà jouées : " + string(runesPlayed)})
+		buildDisplay3d(10, 4, colorPointingAt, []string{"Lettres déjà jouées : " + strings.ToUpper(string(runesPlayed))})
 		switch status {
 		case ALREADYPLAYED:
 			buildDisplay3d(11, 6, Orangered, []string{"Vous avez déjà joué cette lettre !"})
@@ -547,7 +621,7 @@ func play() {
 		} else {
 			buildDisplay3d(12, 4, colorOptions, []string{"Tapez une lettre pour deviner le mot"})
 		}
-		buildDisplay3d(13, 4, colorTitle, []string{"Utilisez les flèches (haut et bas) pour changer de mode"})
+		buildDisplay3d(13, 4, colorTitle, []string{"Utilisez les flèches pour changer de mode"})
 		showDisplay3d()
 		if strings.Join(strings.Split(string(wordDisplay), " "), "") == strings.ToUpper(string(word)) {
 			hasWon = true
@@ -602,15 +676,28 @@ func play() {
 
 func endGame(hasWon bool) {
 	if hasWon {
-		buildDisplay3d(4, 4, colorTitle, []string{"Félicitations,", "vous avez gagné !", "", "Le mot était : " + strings.ToUpper(string(word)), "", "Votre score est : " + strconv.Itoa(score), "", "", "Attendez quelques secondes pour revenir au menu principal"})
+		buildDisplay3d(3, 4, colorTitle, []string{"                  Félicitations, " + colorCode(colorPointingAt) + name, "", colorCode(colorTitle) + "                    Vous avez gagné !", "", "                 Le mot était : " + colorCode(colorPointingAt) + strings.ToUpper(string(word)), "", colorCode(colorTitle) + "                   Votre score est : " + colorCode(colorPointingAt) + strconv.Itoa(score), "", "", colorCode(colorOptions) + "          [Tapez sur Entrée pour revenir au menu]"})
 		showDisplay3d()
 		saveGame()
 	} else {
-		buildDisplay3d(6, 4, colorTitle, []string{"GAME OVER", "", "Le mot était : " + strings.ToUpper(string(word)), "", "", "Attendez quelques secondes pour revenir au menu principal"})
-		buildDisplay3d(3, 52, colorTitle, strings.Split(hangman[len(hangman)-1], "\n"))
+		buildDisplay3d(4, 4, colorTitle, []string{"                         GAME OVER", "", "", "", "         Le mot était : " + colorCode(colorPointingAt) + strings.ToUpper(string(word)), "", "", "", colorCode(colorOptions) + "          [Tapez sur Entrée pour revenir au menu]"})
+		buildDisplay3d(3, 52, Orangered, strings.Split(hangman[len(hangman)-1], "\n"))
 		showDisplay3d()
 	}
-	time.Sleep(time.Second * 10)
+	tty, err := tty.Open()
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer tty.Close()
+	for {
+		char, err := tty.ReadRune()
+		if err != nil {
+			log.Fatal(err)
+		}
+		if char == 13 { //Enter
+			break
+		}
+	}
 }
 
 func clearGameData() {

@@ -3,10 +3,15 @@ package ProjetHangman
 import (
 	"encoding/json"
 	"fmt"
+	"golang.org/x/text/runes"
+	"golang.org/x/text/transform"
+	"golang.org/x/text/unicode/norm"
 	"log"
-	"math/rand"
 	"os"
 	"sort"
+	"strings"
+	"time"
+	"unicode"
 )
 
 type Game struct {
@@ -15,6 +20,15 @@ type Game struct {
 	Word        string
 	Difficulty  int
 	Dictionnary string
+}
+
+type Parameters struct {
+	Name            string
+	DictionaryPath  string
+	ColorBorder     Color
+	ColorTitle      Color
+	ColorOptions    Color
+	ColorPointingAt Color
 }
 
 var savedGames []Game
@@ -51,37 +65,17 @@ func nbRemainingLetters(wordDisplay []rune) int {
 	return result
 }
 
-/*
-	  func Randplay() {
-
-		rand.Seed(time.Now().Unix())
-
-		//Generate a random character between lowercase a to z
-		randomChar := 'a' + rune(rand.Intn(26))
-		fmt.Println(string(randomChar))
-
-		//Generate a random character between uppercase A and Z
-		randomChar = 'A' + rune(rand.Intn(26))
-		fmt.Println(string(randomChar))
-
-		//Generate a random character between uppercase A and Z  and lowercase a to z
-		randomInt := rand.Intn(2)
-		if randomInt == 1 {
-			randomChar = 'A' + rune(rand.Intn(26))
-		} else {
-			randomChar = 'a' + rune(rand.Intn(26))
-		}
-		fmt.Println(string(randomChar))
+func dictionaryName() string {
+	switch dictionaryPath {
+	case "../Files/Dictionaries/ods5.txt":
+		return "Scrabble"
+	case "../Files/Dictionaries/ospd3_expurgated.txt":
+		return "Anglais"
+	case "../Files/Dictionaries/italiano.txt":
+		return "Italien"
+	default:
+		return "Personnalisé"
 	}
-*/
-func Randplay(n int) string {
-	var letterRunes = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
-
-	b := make([]rune, n)
-	for i := range b {
-		b[i] = letterRunes[rand.Intn(len(letterRunes))]
-	}
-	return string(b)
 }
 
 func saveGame() {
@@ -90,7 +84,7 @@ func saveGame() {
 		Score:       score,
 		Word:        string(word),
 		Difficulty:  difficulty,
-		Dictionnary: "Scrabble",
+		Dictionnary: dictionaryName(),
 	}
 	newEntry, err := json.Marshal(currentGame)
 	if err != nil {
@@ -112,22 +106,22 @@ func saveGame() {
 func retreiveSavedGames() {
 	savedEntries, err := os.ReadFile("../Files/scores.txt")
 	if err != nil {
-		fmt.Println("Aucune sauvegarde détectée...")
+		fmt.Println(colorCode(Salmon), "Aucune sauvegarde détectée...", CLEARCOLOR)
 		return
 	}
 	savedEntries = append([]byte{'[', '\n'}, savedEntries...)
 	savedEntries = append(savedEntries, '\n', ']')
 	err = json.Unmarshal(savedEntries, &savedGames)
 	if err != nil {
-		fmt.Println("Erreur de récupération des données...")
+		fmt.Println(colorCode(Red), "Erreur de récupération des données...", CLEARCOLOR)
 		fmt.Println()
-		fmt.Println("Données récupérées :")
-		fmt.Println(string(savedEntries))
+		fmt.Println(colorCode(Orangered), "Données récupérées :", CLEARCOLOR)
+		fmt.Println(colorCode(Orange), string(savedEntries), CLEARCOLOR)
 		log.Fatal(err)
 	}
 }
 
-func filterTopTenGames() []Game {
+func sortTopTenGames() []Game {
 	retreiveSavedGames()
 	sort.SliceStable(savedGames, func(i, j int) bool { return savedGames[i].Score > savedGames[j].Score })
 	return savedGames
@@ -145,5 +139,77 @@ func toStringDifficulty(difficulty int) string {
 		return "Légendaire"
 	default:
 		return "Inconnu"
+	}
+}
+
+func checkDictionary() bool {
+	for i, str := range words {
+		words[i] = removeAccents(words[i])
+		words[i] = strings.ToLower(str)
+		str = words[i]
+		for _, char := range str {
+			if char < 'a' || char > 'z' {
+				return false
+			}
+		}
+	}
+	return true
+}
+
+func removeAccents(str string) string {
+	transformer := transform.Chain(norm.NFD, runes.Remove(runes.In(unicode.Mn)), norm.NFC)
+	result, _, err := transform.String(transformer, str)
+	if err != nil {
+		log.Fatal(err)
+	}
+	for i, char := range result {
+		if char == 'ñ' {
+			result = string([]rune(result)[:i]) + "n" + string([]rune(result)[i+1:])
+		}
+	}
+	return result
+}
+
+func chargeParameters() {
+	var savedParameters Parameters
+	savedEntries, err := os.ReadFile("../Files/config.txt")
+	if err != nil {
+		fmt.Println(colorCode(Salmon), "Aucune fichier de configuration détecté...", CLEARCOLOR)
+		time.Sleep(time.Second * 1)
+		return
+	}
+	err = json.Unmarshal(savedEntries, &savedParameters)
+	if err != nil {
+		fmt.Println(colorCode(Red), "Erreur de récupération des données...", CLEARCOLOR)
+		fmt.Println()
+		fmt.Println(colorCode(Orange), "Données récupérées :", CLEARCOLOR)
+		fmt.Println(colorCode(Orange), string(savedEntries), CLEARCOLOR)
+		log.Fatal(err)
+	} else {
+		name = savedParameters.Name
+		dictionaryPath = savedParameters.DictionaryPath
+		colorBorder = savedParameters.ColorBorder
+		colorTitle = savedParameters.ColorTitle
+		colorOptions = savedParameters.ColorOptions
+		colorPointingAt = savedParameters.ColorPointingAt
+	}
+}
+
+func saveParameters() {
+	currentParameters := Parameters{
+		Name:            name,
+		DictionaryPath:  dictionaryPath,
+		ColorBorder:     colorBorder,
+		ColorTitle:      colorTitle,
+		ColorOptions:    colorOptions,
+		ColorPointingAt: colorPointingAt,
+	}
+	newEntry, err := json.Marshal(currentParameters)
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = os.WriteFile("../Files/config.txt", newEntry, 0666)
+	if err != nil {
+		log.Fatal(err)
 	}
 }

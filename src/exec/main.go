@@ -1,7 +1,10 @@
 package main
 
-import utils "ProjetHangman"
+import (
+	game "ProjetHangman"
+	"os"
+)
 
 func main() {
-	utils.PrincipalMenu()
+	game.Run(os.Args)
 }
