@@ -11,4 +11,7 @@
 {"Name":"Thorgan","Score":35,"Word":"parler","Difficulty":7,"Dictionnary":"Italien"},
 {"Name":"Thorgan","Score":-10,"Word":"vane","Difficulty":4,"Dictionnary":"Italien"},
 {"Name":"Antoine","Score":75,"Word":"pinwheeling","Difficulty":13,"Dictionnary":"Anglais"},
-{"Name":"Antoine","Score":74,"Word":"decisioning","Difficulty":13,"Dictionnary":"Anglais"}
+{"Name":"Antoine","Score":74,"Word":"decisioning","Difficulty":13,"Dictionnary":"Anglais"},
+{"Name":"Thorgan","Score":93,"Word":"gratineeing","Difficulty":13,"Dictionnary":"Anglais"},
+{"Name":"Antoine","Score":0,"Word":"oars","Difficulty":4,"Dictionnary":"Anglais"},
+{"Name":"Antoine","Score":65,"Word":"originat","Difficulty":10,"Dictionnary":"Scrabble"}

@@ -45,6 +45,7 @@ var scoreDisplay = []string{
 	"              [Tapez sur Entrée pour revenir au menu]              ",
 }
 
+// buildDisplay3d adds the content to display3d with color codes in the line and column specified in the parameters (for each character that appears on screen, there is a string that contains the color code, the character, and the CLEARCOLOR to reset the color code. If the content contains a color code, it will change the color put in the parameters from the corresponding column onwards.
 func buildDisplay3d(line, column int, color Color, content []string) {
 	currentColorCode := colorCode(color)
 	line += 2
@@ -98,6 +99,7 @@ func buildDisplay3d(line, column int, color Color, content []string) {
 	}
 }
 
+// showDisplay3d prints display3d in the terminal and resets it afterwards.
 func showDisplay3d() {
 	clearTerminal()
 	for _, line := range display3d {
@@ -109,6 +111,7 @@ func showDisplay3d() {
 	clearDisplay3d()
 }
 
+// clearDisplay3d clears the variable display3d and adds the border.
 func clearDisplay3d() {
 	display3d = [18][75]string{}
 	for i, str := range border {

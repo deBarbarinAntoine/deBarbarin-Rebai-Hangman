@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/mattn/go-tty"
 	"log"
-	"math/rand"
 	"os"
 	"os/exec"
 	"runtime"
@@ -18,7 +17,6 @@ var words []string
 var word, runesPlayed []rune
 var nbLettersFound, nbErrors, score int
 var hangman []string
-var firstGame = true
 var name string
 var difficulty int
 var personalDictionary bool
@@ -49,6 +47,7 @@ const (
 	LEGENDARY = 13
 )
 
+// runCmd executes the command and arguments put in the parameters.
 func runCmd(name string, arg ...string) {
 	cmd := exec.Command(name, arg...)
 	cmd.Stdout = os.Stdout
@@ -58,6 +57,7 @@ func runCmd(name string, arg ...string) {
 	}
 }
 
+// clearTerminal clears the terminal using the corresponding command.
 func clearTerminal() {
 	switch runtime.GOOS {
 	case "darwin":
@@ -71,6 +71,7 @@ func clearTerminal() {
 	}
 }
 
+// Run prepares the program and checks the custom dictionary if it is passed in the main's parameters.
 func Run(args []string) {
 	chargeParameters()
 	if len(args) > 1 {
@@ -95,6 +96,7 @@ func Run(args []string) {
 				time.Sleep(time.Second * 5)
 			} else {
 				if checkDictionary() {
+					dictionaryPath = args[1]
 					personalDictionary = true
 				} else {
 					fmt.Println(colorCode(Red), "Dictionnaire invalide", CLEARCOLOR)
@@ -109,6 +111,7 @@ func Run(args []string) {
 	principalMenu()
 }
 
+// inputMenu waits for a correct input from the player inside a menu (arrow keys and enter) and returns the changes horizontally (x), vertically (y) and the selection (enter).
 func inputMenu() (x, y int, enter bool) {
 	tty, err := tty.Open()
 	if err != nil {
@@ -158,6 +161,7 @@ func inputMenu() (x, y int, enter bool) {
 	}
 }
 
+// createVerticalMenu creates a menu with the cursor's first position, the cursor, the title and any number of options needed. It waits for the players' selection to return the selected option.
 func createVerticalMenu(cursorAt int, cursor, title string, options ...string) string {
 	for {
 		clearDisplay3d()
@@ -190,6 +194,7 @@ func createVerticalMenu(cursorAt int, cursor, title string, options ...string) s
 	}
 }
 
+// principalMenu shows the principal menu... ;)
 func principalMenu() {
 	clearTerminal()
 	for {
@@ -208,6 +213,7 @@ func principalMenu() {
 	}
 }
 
+// parameters shows the parameters menu... ;)
 func parameters() {
 	clearTerminal()
 	for {
@@ -228,6 +234,7 @@ func parameters() {
 	}
 }
 
+// changeDictionary shows the dictionary menu... ;)
 func changeDictionary() {
 	clearTerminal()
 	for {
@@ -247,6 +254,7 @@ func changeDictionary() {
 	}
 }
 
+// selectColorFamily shows the color family menu... for any option put in the parameters ;)
 func selectColorFamily(option int) {
 	clearTerminal()
 	var title string
@@ -288,6 +296,7 @@ func selectColorFamily(option int) {
 	}
 }
 
+// selectColor shows the color selection menu... ;)
 func selectColor(color []Color, option int) {
 	clearTerminal()
 	var options []string
@@ -317,6 +326,7 @@ func selectColor(color []Color, option int) {
 	}
 }
 
+// topScores shows the top ten scores... ;)
 func topScores() {
 	clearTerminal()
 	sortTopTenGames()
@@ -349,57 +359,7 @@ func topScores() {
 	}
 }
 
-func retreiveWords() {
-	if dictionaryPath == "" {
-		dictionaryPath = "../Files/Dictionaries/ods5.txt"
-	}
-	content, err := os.ReadFile(dictionaryPath)
-	if err != nil {
-		log.Fatal(err)
-	}
-	if checkDictionary() {
-		words = strings.Split(string(content), "\n")
-	} else {
-		fmt.Println(colorCode(Red), "Erreur d'acquisition des mots du dictionnaire", CLEARCOLOR)
-		time.Sleep(time.Second * 2)
-	}
-}
-
-func retreiveHangman() {
-	hangman = append(hangman[0:0])
-	content, err := os.ReadFile("../Files/hangman.txt")
-	if err != nil {
-		log.Fatal(err)
-	}
-	var line int
-	var str string
-	for _, char := range content {
-		str += string(char)
-		if char == '\n' {
-			line++
-		}
-		if line == 8 {
-			hangman = append(hangman, str)
-			str = ""
-			line = 0
-		}
-	}
-}
-
-func checkRune(char rune) int {
-	for _, r := range runesPlayed {
-		if r == char {
-			return ALREADYPLAYED
-		}
-	}
-	for _, r := range word {
-		if r == char {
-			return CORRECTRUNE
-		}
-	}
-	return INCORRECTRUNE
-}
-
+// input waits for the player's input (rune or arrow key) and returns the rune, the checkRune's result and true if the key pressed was an arrow (to switch mode).
 func input() (rune, int, bool) {
 	tty, err := tty.Open()
 	if err != nil {
@@ -449,6 +409,7 @@ func input() (rune, int, bool) {
 	}
 }
 
+// wordInput waits for the player's input (rune, enter or arrow key) and returns the rune, true if the key pressed was enter, and true if the key pressed was an arrow to switch mode.
 func wordInput() (rune, bool, bool) {
 	tty, err := tty.Open()
 	if err != nil {
@@ -490,6 +451,7 @@ func wordInput() (rune, bool, bool) {
 	}
 }
 
+// setName shows the name setting menu and awaits for the wordInput's result to fill the name's variable.
 func setName() {
 	var incorrectName bool
 	for {
@@ -522,6 +484,7 @@ func setName() {
 	play()
 }
 
+// setDifficulty shows the difficulty setting menu... ;)
 func setDifficulty() {
 	clearTerminal()
 	for {
@@ -542,50 +505,12 @@ func setDifficulty() {
 	}
 }
 
-func chooseWord(difficulty int) []rune {
-	var possibleWords []string
-	for _, str := range words {
-		if len(str) >= difficulty-2 && len(str) <= difficulty {
-			possibleWords = append(possibleWords, str)
-		}
-		if difficulty == LEGENDARY {
-			if len(str) > difficulty {
-				possibleWords = append(possibleWords, str)
-			}
-		}
-	}
-	if len(possibleWords) < 10 {
-		var i int
-		for _, str := range words {
-			i++
-			if len(str) == difficulty-i-2 || len(str) == difficulty+i {
-				possibleWords = append(possibleWords, str)
-				if len(possibleWords) > 10 {
-					break
-				}
-			}
-		}
-	}
-	return []rune((possibleWords[rand.Intn(len(possibleWords)-1)]))
-}
-
-func hint(wordDisplay []rune) []rune {
-	if difficulty != LEGENDARY {
-		i := rand.Intn(len(word) - 1)
-		char := word[i]
-		wordDisplay[i*2] = char - 32
-	}
-	return wordDisplay
-}
-
+// play is the game's main function. It sets the game and contains the game's loop waiting for the player's input.
 func play() {
 	var hasWon bool
-	if firstGame {
-		if !personalDictionary {
-			retreiveWords()
-		}
-		retreiveHangman()
-		firstGame = false
+	retreiveHangman()
+	if !personalDictionary {
+		retreiveWords()
 	}
 	clearTerminal()
 	clearGameData()
@@ -674,6 +599,7 @@ func play() {
 	endGame(hasWon)
 }
 
+// endGame shows the proper endgame screen with all important information and waits for the player's input (enter key) to return to the principal menu.
 func endGame(hasWon bool) {
 	if hasWon {
 		buildDisplay3d(3, 4, colorTitle, []string{"                  Félicitations, " + colorCode(colorPointingAt) + name, "", colorCode(colorTitle) + "                    Vous avez gagné !", "", "                 Le mot était : " + colorCode(colorPointingAt) + strings.ToUpper(string(word)), "", colorCode(colorTitle) + "                   Votre score est : " + colorCode(colorPointingAt) + strconv.Itoa(score), "", "", colorCode(colorOptions) + "          [Tapez sur Entrée pour revenir au menu]"})
@@ -698,11 +624,4 @@ func endGame(hasWon bool) {
 			break
 		}
 	}
-}
-
-func clearGameData() {
-	nbErrors = 0
-	nbLettersFound = 0
-	score = 0
-	runesPlayed = append(runesPlayed[0:0])
 }

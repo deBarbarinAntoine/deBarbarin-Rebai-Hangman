@@ -7,6 +7,7 @@ import (
 	"golang.org/x/text/transform"
 	"golang.org/x/text/unicode/norm"
 	"log"
+	"math/rand"
 	"os"
 	"sort"
 	"strings"
@@ -33,10 +34,12 @@ type Parameters struct {
 
 var savedGames []Game
 
+// checkWord checks if the player found the word. Returns true if he found it and false if not.
 func checkWord(word []rune, try string) bool {
 	return try == string(word)
 }
 
+// Function that changes the wordDisplay to replace the '_' character with the rune played if it is in the word.
 func displayWord(word []rune, wordDisplay []rune, char rune) []rune {
 	for i, r := range word {
 		if r == char {
@@ -48,6 +51,7 @@ func displayWord(word []rune, wordDisplay []rune, char rune) []rune {
 	return wordDisplay
 }
 
+// revealWord reveals all runes in wordDisplay.
 func revealWord(word, wordDisplay []rune) []rune {
 	for i, r := range word {
 		wordDisplay[i*2] = r - 32
@@ -55,6 +59,7 @@ func revealWord(word, wordDisplay []rune) []rune {
 	return wordDisplay
 }
 
+// nbRemainingLetters returns the number of letters still not found in the word.
 func nbRemainingLetters(wordDisplay []rune) int {
 	var result int
 	for _, char := range wordDisplay {
@@ -65,6 +70,107 @@ func nbRemainingLetters(wordDisplay []rune) int {
 	return result
 }
 
+// retreiveWords retreive the words from the selected dictionary.
+func retreiveWords() {
+	if dictionaryPath == "" {
+		dictionaryPath = "../Files/Dictionaries/ods5.txt"
+	}
+	content, err := os.ReadFile(dictionaryPath)
+	if err != nil {
+		log.Fatal(err)
+	}
+	if checkDictionary() {
+		words = strings.Split(string(content), "\n")
+	} else {
+		fmt.Println(colorCode(Red), "Erreur d'acquisition des mots du dictionnaire", CLEARCOLOR)
+		time.Sleep(time.Second * 2)
+	}
+}
+
+// retreiveHangman retreives the hangman in /Files/hangman.txt and stores it in hangman.
+func retreiveHangman() {
+	hangman = append(hangman[0:0])
+	content, err := os.ReadFile("../Files/hangman.txt")
+	if err != nil {
+		log.Fatal(err)
+	}
+	var line int
+	var str string
+	for _, char := range content {
+		str += string(char)
+		if char == '\n' {
+			line++
+		}
+		if line == 8 {
+			hangman = append(hangman, str)
+			str = ""
+			line = 0
+		}
+	}
+}
+
+// checkRune checks if the rune played is already played, correct or incorrect.
+func checkRune(char rune) int {
+	for _, r := range runesPlayed {
+		if r == char {
+			return ALREADYPLAYED
+		}
+	}
+	for _, r := range word {
+		if r == char {
+			return CORRECTRUNE
+		}
+	}
+	return INCORRECTRUNE
+}
+
+// clearGameData clears the previous' game's data to start a new one.
+func clearGameData() {
+	nbErrors = 0
+	nbLettersFound = 0
+	score = 0
+	runesPlayed = append(runesPlayed[0:0])
+}
+
+// hint reveal a random rune in wordDisplay.
+func hint(wordDisplay []rune) []rune {
+	if difficulty != LEGENDARY {
+		i := rand.Intn(len(word) - 1)
+		char := word[i]
+		wordDisplay[i*2] = char - 32
+	}
+	return wordDisplay
+}
+
+// chooseWord chooses randomly a word from words (the dictionary's words' list) according to the difficulty set previously.
+func chooseWord(difficulty int) []rune {
+	var possibleWords []string
+	for _, str := range words {
+		if len(str) >= difficulty-2 && len(str) <= difficulty {
+			possibleWords = append(possibleWords, str)
+		}
+		if difficulty == LEGENDARY {
+			if len(str) > difficulty {
+				possibleWords = append(possibleWords, str)
+			}
+		}
+	}
+	if len(possibleWords) < 10 {
+		var i int
+		for _, str := range words {
+			i++
+			if len(str) == difficulty-i-2 || len(str) == difficulty+i {
+				possibleWords = append(possibleWords, str)
+				if len(possibleWords) > 10 {
+					break
+				}
+			}
+		}
+	}
+	return []rune((possibleWords[rand.Intn(len(possibleWords)-1)]))
+}
+
+// dictionaryName returns the name of the dictionary.
 func dictionaryName() string {
 	switch dictionaryPath {
 	case "../Files/Dictionaries/ods5.txt":
@@ -78,6 +184,7 @@ func dictionaryName() string {
 	}
 }
 
+// saveGame saves the current game in /Files/scores.txt.
 func saveGame() {
 	currentGame := Game{
 		Name:        name,
@@ -103,6 +210,7 @@ func saveGame() {
 	}
 }
 
+// retreiveSavedGames retreive all saved games present in /Files/scores.txt and put it in savedEntries.
 func retreiveSavedGames() {
 	savedEntries, err := os.ReadFile("../Files/scores.txt")
 	if err != nil {
@@ -121,12 +229,14 @@ func retreiveSavedGames() {
 	}
 }
 
+// sortTopTenGames sort the saved games by score in decreasing order.
 func sortTopTenGames() []Game {
 	retreiveSavedGames()
 	sort.SliceStable(savedGames, func(i, j int) bool { return savedGames[i].Score > savedGames[j].Score })
 	return savedGames
 }
 
+// toStringDifficulty returns the name of the difficulty.
 func toStringDifficulty(difficulty int) string {
 	switch difficulty {
 	case EASY:
@@ -142,6 +252,7 @@ func toStringDifficulty(difficulty int) string {
 	}
 }
 
+// checkDictionary checks if the dictionary is usable or not and changes the case. It tries to remove the accents, but the function doesn't really work unfortunately.
 func checkDictionary() bool {
 	for i, str := range words {
 		words[i] = removeAccents(words[i])
@@ -156,6 +267,7 @@ func checkDictionary() bool {
 	return true
 }
 
+// removeAccents removes the accents. Unfortunately, it doesn't really work.
 func removeAccents(str string) string {
 	transformer := transform.Chain(norm.NFD, runes.Remove(runes.In(unicode.Mn)), norm.NFC)
 	result, _, err := transform.String(transformer, str)
@@ -170,6 +282,7 @@ func removeAccents(str string) string {
 	return result
 }
 
+// chargeParameters retreive the parameters present in /Files/config.txt and changes all corresponding variables.
 func chargeParameters() {
 	var savedParameters Parameters
 	savedEntries, err := os.ReadFile("../Files/config.txt")
@@ -197,6 +310,7 @@ func chargeParameters() {
 	}
 }
 
+// saveParameters saves all current parameters in /Files/config.txt for later use.
 func saveParameters() {
 	currentParameters := Parameters{
 		Name:            name,

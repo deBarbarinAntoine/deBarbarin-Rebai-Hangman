@@ -111,6 +111,7 @@ var (
 
 const CLEARCOLOR = "\033[0m"
 
+// colorCode generates a string in the adequate format for the terminal to change the color using the RGB components present in the Color struct.
 func colorCode(color Color) string {
 	return "\033[38;2;" + strconv.Itoa(color.R) + ";" + strconv.Itoa(color.G) + ";" + strconv.Itoa(color.B) + "m"
 }
